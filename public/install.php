@@ -1,44 +1,38 @@
 <?php
-/**
- * TshuksERP - Guided Web Installer
- */
-
 session_start();
 
-// Define paths
 define('BASE_PATH', dirname(dirname(__FILE__)));
 define('SRC_PATH', BASE_PATH . '/src');
 define('PUBLIC_PATH', __DIR__);
 
-// Check if already installed
 if (file_exists(SRC_PATH . '/config/database.php')) {
     header('Location: index.php');
     exit;
 }
 
-// Get current step
 $step = isset($_GET['step']) ? (int)$_GET['step'] : 1;
 $message = '';
 $error = '';
 
-// Process form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $step = isset($_POST['step']) ? (int)$_POST['step'] : 1;
     
     switch ($step) {
         case 1:
-            // Validate system requirements
             $step = 2;
             break;
             
         case 2:
-            // Database configuration
             $db_host = $_POST['db_host'] ?? 'localhost';
             $db_name = $_POST['db_name'] ?? '';
             $db_user = $_POST['db_user'] ?? '';
             $db_pass = $_POST['db_pass'] ?? '';
             
-            // Test connection
+            if (empty($db_name) || empty($db_user)) {
+                $error = 'Database name and user are required';
+                break;
+            }
+            
             try {
                 $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
                 if ($conn->connect_error) {
@@ -54,25 +48,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
             
         case 3:
-            // Create tables and seed data
             if (isset($_SESSION['db_config'])) {
-                // TODO: Run migrations
-                $step = 4;
+                $db_config = $_SESSION['db_config'];
+                $conn = new mysqli($db_config['db_host'], $db_config['db_user'], $db_config['db_pass'], $db_config['db_name']);
+                
+                if ($conn->connect_error) {
+                    $error = 'Database connection failed during setup';
+                    break;
+                }
+                
+                $schema = file_get_contents(SRC_PATH . '/migrations/001_initial_schema.sql');
+                if ($conn->multi_query($schema)) {
+                    while ($conn->more_results()) {
+                        $conn->next_result();
+                    }
+                    $_SESSION['db_setup_done'] = true;
+                    $step = 4;
+                } else {
+                    $error = 'Failed to create tables: ' . $conn->error;
+                }
+                
+                $conn->close();
             }
             break;
             
         case 4:
-            // Create admin user
+            $admin_name = $_POST['admin_name'] ?? '';
             $admin_email = $_POST['admin_email'] ?? '';
             $admin_password = $_POST['admin_password'] ?? '';
-            $admin_name = $_POST['admin_name'] ?? '';
+            $admin_password_confirm = $_POST['admin_password_confirm'] ?? '';
             
-            if (empty($admin_email) || empty($admin_password) || empty($admin_name)) {
+            if (empty($admin_name) || empty($admin_email) || empty($admin_password)) {
                 $error = 'All fields are required';
-            } else {
-                // TODO: Create admin user in database
-                $step = 5;
+                break;
             }
+            
+            if ($admin_password !== $admin_password_confirm) {
+                $error = 'Passwords do not match';
+                break;
+            }
+            
+            $_SESSION['admin_data'] = compact('admin_name', 'admin_email', 'admin_password');
+            $step = 5;
             break;
     }
 }
@@ -86,156 +103,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>TshuksERP - Installation Wizard</title>
     <link rel="stylesheet" href="css/installer.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        
-        .installer-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 600px;
-            overflow: hidden;
-        }
-        
-        .installer-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-        }
-        
-        .installer-header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-        
-        .installer-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .installer-body {
-            padding: 40px 30px;
-        }
-        
-        .progress-bar {
-            display: flex;
-            margin-bottom: 30px;
-            gap: 10px;
-        }
-        
-        .progress-step {
-            flex: 1;
-            height: 4px;
-            background: #e0e0e0;
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .progress-step.active {
-            background: #667eea;
-        }
-        
-        .progress-step.completed {
-            background: #4caf50;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            font-family: inherit;
-        }
-        
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .alert {
-            padding: 12px 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        
-        .alert-error {
-            background: #ffebee;
-            border: 1px solid #ef5350;
-            color: #c62828;
-        }
-        
-        .alert-success {
-            background: #e8f5e9;
-            border: 1px solid #66bb6a;
-            color: #2e7d32;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-        
-        button {
-            flex: 1;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5568d3;
-        }
-        
-        .btn-secondary {
-            background: #e0e0e0;
-            color: #333;
-        }
-        
-        .btn-secondary:hover {
-            background: #d0d0d0;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .installer-container { background: white; border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); width: 100%; max-width: 600px; overflow: hidden; }
+        .installer-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px 30px; text-align: center; }
+        .installer-header h1 { font-size: 28px; margin-bottom: 10px; }
+        .installer-body { padding: 40px 30px; }
+        .progress-bar { display: flex; margin-bottom: 30px; gap: 10px; }
+        .progress-step { flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+        .progress-step.active { background: #667eea; }
+        .progress-step.completed { background: #4caf50; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; font-size: 14px; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; font-family: inherit; }
+        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .alert { padding: 12px 15px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
+        .alert-error { background: #ffebee; border: 1px solid #ef5350; color: #c62828; }
+        .alert-success { background: #e8f5e9; border: 1px solid #66bb6a; color: #2e7d32; }
+        .button-group { display: flex; gap: 10px; margin-top: 30px; }
+        button { flex: 1; padding: 12px 20px; border: none; border-radius: 5px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn-secondary:hover { background: #d0d0d0; }
+        .checkbox-list { margin-top: 10px; }
+        .checkbox-item { margin-bottom: 8px; }
+        .checkbox-item label { display: flex; align-items: center; gap: 10px; margin-bottom: 0; font-weight: 400; }
+        .checkbox-item input { width: auto; }
     </style>
 </head>
 <body>
@@ -276,11 +170,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
                             <span>MySQLi Extension</span>
-                            <span style="color: #4caf50;"><?= extension_loaded('mysqli') ? '✓' : '✗' ?></span>
+                            <span style="color: <?= extension_loaded('mysqli') ? '#4caf50' : '#f44336' ?>;"><?= extension_loaded('mysqli') ? '✓' : '✗' ?></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;">
+                            <span>PDO Extension</span>
+                            <span style="color: <?= extension_loaded('pdo') ? '#4caf50' : '#f44336' ?>;"><?= extension_loaded('pdo') ? '✓' : '✗' ?></span>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 14px;">
                             <span>File Write Permission</span>
-                            <span style="color: #4caf50;"><?= is_writable(BASE_PATH) ? '✓' : '✗' ?></span>
+                            <span style="color: <?= is_writable(BASE_PATH) ? '#4caf50' : '#f44336' ?>;"><?= is_writable(BASE_PATH) ? '✓' : '✗' ?></span>
                         </div>
                     </div>
                     
@@ -370,9 +268,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <p>✓ System configured</p>
                     </div>
                     
+                    <?php
+                    if (isset($_SESSION['db_config']) && isset($_SESSION['admin_data'])) {
+                        $db_config = $_SESSION['db_config'];
+                        $admin_data = $_SESSION['admin_data'];
+                        
+                        $config_content = '<?php' . "\n" .
+                            "return [\n" .
+                            "    'driver' => 'mysql',\n" .
+                            "    'host' => '" . addslashes($db_config['db_host']) . "',\n" .
+                            "    'port' => 3306,\n" .
+                            "    'database' => '" . addslashes($db_config['db_name']) . "',\n" .
+                            "    'username' => '" . addslashes($db_config['db_user']) . "',\n" .
+                            "    'password' => '" . addslashes($db_config['db_pass']) . "',\n" .
+                            "    'charset' => 'utf8mb4',\n" .
+                            "    'collation' => 'utf8mb4_unicode_ci',\n" .
+                            "];\n";
+                        
+                        file_put_contents(SRC_PATH . '/config/database.php', $config_content);
+                        
+                        $conn = new mysqli($db_config['db_host'], $db_config['db_user'], $db_config['db_pass'], $db_config['db_name']);
+                        if ($conn) {
+                            require_once SRC_PATH . '/utils/Security.php';
+                            $password_hash = password_hash($admin_data['admin_password'], PASSWORD_BCRYPT, ['cost' => 12]);
+                            $stmt = $conn->prepare('INSERT INTO users (name, email, password_hash, role_id, status, created_at) VALUES (?, ?, ?, 1, "active", NOW())');
+                            $stmt->bind_param('sss', $admin_data['admin_name'], $admin_data['admin_email'], $password_hash);
+                            $stmt->execute();
+                            $stmt->close();
+                            $conn->close();
+                        }
+                        
+                        session_destroy();
+                    ?>
+                    
                     <div class="button-group">
-                        <button type="button" class="btn-primary" onclick="window.location='index.php'">Launch Application →</button>
+                        <button type="button" class="btn-primary" onclick="window.location='/login'">Launch Application →</button>
                     </div>
+                    
+                    <?php } ?>
                 <?php endif; ?>
             </form>
         </div>

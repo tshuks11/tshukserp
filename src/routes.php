@@ -20,6 +20,10 @@ return [
         '/reports/sales' => ['ReportController', 'sales'],
         '/reports/expenses' => ['ReportController', 'expenses'],
         '/reports/sales/export' => ['ReportController', 'exportSalesCSV'],
+        '/users' => ['UserController', 'index'],
+        '/users/create' => ['UserController', 'create'],
+        '/users/{id}/edit' => ['UserController', 'edit'],
+        '/verify' => ['VerificationController', 'verify'],
     ],
     'POST' => [
         '/login' => ['AuthController', 'login'],
@@ -28,5 +32,7 @@ return [
         '/payments' => ['PaymentController', 'store'],
         '/inventory' => ['InventoryController', 'store'],
         '/expenses' => ['ExpenseController', 'store'],
+        '/users' => ['UserController', 'store'],
+        '/users/{id}' => ['UserController', 'update'],
     ],
 ];
