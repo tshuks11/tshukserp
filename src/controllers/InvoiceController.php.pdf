@@ -1,0 +1,27 @@
+<?php
+/**
+ * Add PDF download methods to InvoiceController
+ */
+class InvoiceController extends BaseController
+{
+    // ... existing methods ...
+    
+    /**
+     * Download invoice as PDF
+     */
+    public function downloadPDF($id)
+    {
+        $this->authorize(PERM_CREATE_INVOICE);
+        
+        $invoice = new Invoice();
+        $i = $invoice->getById($id);
+        
+        if (!$i) {
+            http_response_code(404);
+            die('Invoice not found');
+        }
+        
+        $pdf = new InvoicePDF($id);
+        $pdf->download();
+    }
+}

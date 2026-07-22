@@ -1,0 +1,27 @@
+<?php
+/**
+ * Add PDF download methods to QuotationController
+ */
+class QuotationController extends BaseController
+{
+    // ... existing methods ...
+    
+    /**
+     * Download quotation as PDF
+     */
+    public function downloadPDF($id)
+    {
+        $this->authorize(PERM_CREATE_QUOTATION);
+        
+        $quotation = new Quotation();
+        $q = $quotation->getById($id);
+        
+        if (!$q) {
+            http_response_code(404);
+            die('Quotation not found');
+        }
+        
+        $pdf = new QuotationPDF($id);
+        $pdf->download();
+    }
+}

@@ -36,6 +36,8 @@ require_once SRC_PATH . '/models/Quotation.php';
 require_once SRC_PATH . '/models/Invoice.php';
 require_once SRC_PATH . '/models/Payment.php';
 require_once SRC_PATH . '/models/Expense.php';
+require_once SRC_PATH . '/bootstrap.php';
+
 require_once SRC_PATH . '/controllers/BaseController.php';
 require_once SRC_PATH . '/controllers/AuthController.php';
 require_once SRC_PATH . '/controllers/DashboardController.php';
@@ -45,6 +47,8 @@ require_once SRC_PATH . '/controllers/PaymentController.php';
 require_once SRC_PATH . '/controllers/ExpenseController.php';
 require_once SRC_PATH . '/controllers/InventoryController.php';
 require_once SRC_PATH . '/controllers/ReportController.php';
+require_once SRC_PATH . '/controllers/UserController.php';
+require_once SRC_PATH . '/controllers/VerificationController.php';
 
 $sessionGuard = new SessionGuard();
 $sessionGuard->guard();
