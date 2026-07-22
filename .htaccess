@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Don't rewrite direct file or directory requests
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rewrite everything else to index.php
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
+</IfModule>
+
+# Prevent direct access to sensitive directories
+<FilesMatch "\.php$">
+    <If "%{REQUEST_URI} =~ m#^/src/#">
+        Deny from all
+    </If>
+</FilesMatch>

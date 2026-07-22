@@ -1,0 +1,31 @@
+# PHP
+*.log
+composer.lock
+vendor/
+
+# Configuration
+public/config.php
+src/config/database.php
+.env
+.env.local
+
+# Uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+phpstorm.xml
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Sessions
+sessions/*
+!sessions/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
