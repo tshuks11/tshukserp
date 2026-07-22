@@ -1,0 +1,32 @@
+<?php
+return [
+    'GET' => [
+        '/dashboard' => ['DashboardController', 'index'],
+        '/login' => ['AuthController', 'showLogin'],
+        '/logout' => ['AuthController', 'logout'],
+        '/quotations' => ['QuotationController', 'index'],
+        '/quotations/create' => ['QuotationController', 'create'],
+        '/quotations/{id}' => ['QuotationController', 'view'],
+        '/invoices' => ['InvoiceController', 'index'],
+        '/invoices/from-quotation' => ['InvoiceController', 'fromQuotation'],
+        '/invoices/{id}' => ['InvoiceController', 'view'],
+        '/payments' => ['PaymentController', 'index'],
+        '/payments/create' => ['PaymentController', 'create'],
+        '/inventory' => ['InventoryController', 'index'],
+        '/inventory/create' => ['InventoryController', 'create'],
+        '/inventory/movements/{product_id}' => ['InventoryController', 'movements'],
+        '/expenses' => ['ExpenseController', 'index'],
+        '/expenses/create' => ['ExpenseController', 'create'],
+        '/reports/sales' => ['ReportController', 'sales'],
+        '/reports/expenses' => ['ReportController', 'expenses'],
+        '/reports/sales/export' => ['ReportController', 'exportSalesCSV'],
+    ],
+    'POST' => [
+        '/login' => ['AuthController', 'login'],
+        '/quotations' => ['QuotationController', 'store'],
+        '/invoices/from-quotation' => ['InvoiceController', 'storeFromQuotation'],
+        '/payments' => ['PaymentController', 'store'],
+        '/inventory' => ['InventoryController', 'store'],
+        '/expenses' => ['ExpenseController', 'store'],
+    ],
+];
